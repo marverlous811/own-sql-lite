@@ -16,6 +16,25 @@ static void panic(const char *format, ...) {
     abort();
 }
 
+typedef enum {
+    META_COMMAND_SUCCESS,
+    META_COMMAND_UNRECOGNIZED_COMMAND
+} MetaCommandResult;
+
+typedef enum {
+    PREPARE_SUCCESS,
+    PREPARE_UNRECOGNIZED_STATEMENT
+} PrepareResult;
+
+typedef enum {
+    INSERT,
+    SELECT
+} StatementType;
+
+typedef struct {
+    StatementType type;
+} Statement;
+
 typedef struct 
 {
     char *buffer;
@@ -51,18 +70,69 @@ void close_input_buffer(InputBuffer* ibuffer){
     free(ibuffer);
 }
 
+MetaCommandResult exec_meta_command(InputBuffer *ibuffer){
+    if(strcmp(ibuffer->buffer, ".exit") == 0) {
+        exit(EXIT_SUCCESS);
+    } else  {
+        return META_COMMAND_UNRECOGNIZED_COMMAND;
+    }
+}
+
+PrepareResult preprare_statement(InputBuffer *ibuffer, Statement* statement) {
+    if (strncmp(ibuffer->buffer, "insert", 6) == 0){
+        statement->type = INSERT;
+        return PREPARE_SUCCESS;
+    }
+    if (strncmp(ibuffer->buffer, "select", 6) == 0) {
+        statement->type = SELECT;
+        return PREPARE_SUCCESS;
+    }
+
+    return PREPARE_UNRECOGNIZED_STATEMENT;
+}
+
+void exec_statement(Statement* statement){
+    switch (statement->type)
+    {
+    case INSERT:
+        printf("This is where we would do an insert. \n");
+        break;
+    case SELECT:
+        printf("This is where we would do an select. \n");
+        break;
+    default:
+        break;
+    }
+}
+
 int main(){
     InputBuffer* ibuffer = new_input_buffer();
     while(true){
         print_promt();
         read_input(ibuffer);
 
-        if(strcmp(ibuffer->buffer, "exit") == 0){
-            // printf("get exit cmd");
-            close_input_buffer(ibuffer);
-            exit(EXIT_SUCCESS);
-        } else {
-            printf("Unrecognized command '%s'.\n", ibuffer->buffer);
+        if(ibuffer->buffer[0] == '.'){
+            switch (exec_meta_command(ibuffer))
+            {
+            case META_COMMAND_SUCCESS:
+                break;
+            default:
+                printf("Unrecognized command '%s'\n", ibuffer->buffer);
+                break;
+            }
+            continue;
         }
+
+        Statement statement;
+        switch(preprare_statement(ibuffer, &statement)) {
+            case PREPARE_SUCCESS:
+                break;
+            default:
+                printf("Unrecognized keyword at start of '%s'.\n",ibuffer->buffer);
+                continue;
+        }
+
+        exec_statement(&statement);
+        printf("Executed. \n");
     }
 }
