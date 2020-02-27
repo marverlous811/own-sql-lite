@@ -6,7 +6,7 @@ directories:
 	mkdir -p ${OUT_DIR}
 
 build: directories
-	g++ -o bin/db main.cpp
+	gcc -o bin/db main.c
 
 test: build
 	rspec
